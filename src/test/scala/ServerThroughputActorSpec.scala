@@ -4,7 +4,7 @@ import akka.testkit._
 import org.scalatest.{BeforeAndAfterAll, MustMatchers, WordSpecLike}
 import com.typesafe.config.{Config, ConfigFactory}
 
-class ServerThroughputInputActorSpec extends TestKit(ActorSystem("TestSystem"))
+class ServerThroughputActorSpec extends TestKit(ActorSystem("TestSystem"))
   with ImplicitSender
   with WordSpecLike
   with BeforeAndAfterAll
@@ -25,7 +25,7 @@ class ServerThroughputInputActorSpec extends TestKit(ActorSystem("TestSystem"))
 
   val testConfig: Config = ConfigFactory.parseString(testConfigString)
 
-  "ServerThroughputInputActor" should {
+  "ServerThroughputActor" should {
     "allocate server with max amount of resources" in {
       val testActor = system.actorOf(Props(new ServersThroughputActor(testConfig)))
       testActor ! Init
