@@ -24,7 +24,7 @@ class ServersThroughputActor(config: Config) extends Actor with ActorLogging {
         val newClientsState = clients.updated(client, ServerResources(server, amount))
 
         context become updateStatesReceive(newServersState, newClientsState)
-        log.info("{} resources allocated for client: '{}'", amount, client)
+        log.debug("{} resources allocated for client: '{}'", amount, client)
         sender() ! Some(server)
 
       case None =>
@@ -42,11 +42,11 @@ class ServersThroughputActor(config: Config) extends Actor with ActorLogging {
           val newClientsState = clients - client
 
           context become updateStatesReceive(newServersState, newClientsState)
-          log.info("Client: '{}' released resources", client)
+          log.debug("Client: '{}' released resources", client)
           sender() ! SuccessEnd
 
         case None =>
-          log.warning("Client: '{}' is trying to release empty resources", client)
+          log.debug("Client: '{}' is trying to release empty resources", client)
           sender() ! EmptyEnd
       }
   }
