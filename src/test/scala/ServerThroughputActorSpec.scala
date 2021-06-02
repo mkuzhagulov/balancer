@@ -24,6 +24,8 @@ class ServerThroughputActorSpec extends TestKit(ActorSystem("TestSystem"))
       |""".stripMargin
 
   val testConfig: Config = ConfigFactory.parseString(testConfigString)
+  val client = "10.11.12.13"
+  val otherClient = "22.33.44.55"
 
   "ServerThroughputActor" should {
     "allocate server with max amount of resources" in {
@@ -31,9 +33,8 @@ class ServerThroughputActorSpec extends TestKit(ActorSystem("TestSystem"))
       testActor ! Init
       expectNoMessage()
 
-      testActor ! AllocateResources("10.11.12.13", 30)
-      val reply = expectMsgType[AllocatedServer]
-      reply.server mustBe "127.0.0.2"
+      testActor ! AllocateResources(client, 30)
+      expectMsg(Some("127.0.0.2"))
     }
 
     "allocate and release resources" in {
@@ -42,24 +43,34 @@ class ServerThroughputActorSpec extends TestKit(ActorSystem("TestSystem"))
       expectNoMessage()
 
       testActor ! AllocateResources("10.11.12.13", 100)
-      val reply1 = expectMsgType[AllocatedServer]
-      reply1.server mustBe "127.0.0.2"
+      expectMsg(Some("127.0.0.2"))
 
-      testActor ! Finish("10.11.12.13")
-      expectNoMessage()
+      testActor ! Finish(client)
+      expectMsg(SuccessEnd)
 
       testActor ! AllocateResources("10.11.12.13", 100)
-      val reply2 = expectMsgType[AllocatedServer]
-      reply2.server mustBe "127.0.0.2"
+      expectMsg(Some("127.0.0.2"))
     }
 
-    "return failure if service have not enough resources" in {
+    "return failure if service has not enough resources" in {
       val testActor = system.actorOf(Props(new ServersThroughputActor(testConfig)))
       testActor ! Init
       expectNoMessage()
 
-      testActor ! AllocateResources("10.11.12.14", 300)
-      expectMsg(NoResources)
+      testActor ! AllocateResources("10.11.12.13", 300)
+      expectMsg(None)
+    }
+
+    "not allow to client release other resources" in {
+      val testActor = system.actorOf(Props(new ServersThroughputActor(testConfig)))
+      testActor ! Init
+      expectNoMessage()
+
+      testActor ! AllocateResources("10.11.12.13", 5)
+      expectMsg(Some("127.0.0.2"))
+
+      testActor ! Finish(otherClient)
+      expectMsg(EmptyEnd)
     }
   }
 }

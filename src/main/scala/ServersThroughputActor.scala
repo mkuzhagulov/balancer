@@ -24,14 +24,16 @@ class ServersThroughputActor(config: Config) extends Actor with ActorLogging {
         val newClientsState = clients.updated(client, ServerResources(server, amount))
 
         context become updateStatesReceive(newServersState, newClientsState)
-        sender() ! AllocatedServer(server)
         log.info("{} resources allocated for client: '{}'", amount, client)
+        sender() ! Some(server)
 
-      case None => sender() ! NoResources
+      case None =>
+        log.info("No server with free {} throughput", amount)
+        sender() ! None
     }
 
     // Сервис позволяет одному клиенту запросить ресурсы один раз до освобождения им ресурсов
-    case AllocateResources(_, _) => sender() ! NoResources
+    case AllocateResources(_, _) => sender() ! None
     case Finish(client) =>
       clients.get(client) match {
         case Some(serverResources) =>
@@ -41,8 +43,11 @@ class ServersThroughputActor(config: Config) extends Actor with ActorLogging {
 
           context become updateStatesReceive(newServersState, newClientsState)
           log.info("Client: '{}' released resources", client)
+          sender() ! SuccessEnd
 
-        case None => log.warning("Client: '{}' is trying to release empty resources", client)
+        case None =>
+          log.warning("Client: '{}' is trying to release empty resources", client)
+          sender() ! EmptyEnd
       }
   }
 }
@@ -52,9 +57,11 @@ object ServersThroughputActor {
 
   case object Init
   case class AllocateResources(client: String, num: Int)
-  case class AllocatedServer(server: String)
-  case object NoResources
   case class Finish(client: String)
+
+  sealed trait EndResult
+  case object SuccessEnd extends EndResult
+  case object EmptyEnd extends EndResult
 
   def findResources(throughput: Int, serversState: Map[String, Int]): Option[String] = {
     serversState.reduceLeft((x, y) => if (x._2 >= y._2) x else y) match {
