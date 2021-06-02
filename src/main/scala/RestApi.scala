@@ -26,7 +26,7 @@ class RestApi(serverThroughputActor: ActorRef)
                 case Success(serverOpt) =>
                   serverOpt match {
                     case Some(server) => complete(ActorResult(server))
-                    case None => complete(StatusCodes.ServiceUnavailable, NoResources("No free server available"))
+                    case None => complete(StatusCodes.InternalServerError, NoResources("No free server available"))
                   }
                 case Failure(_) => complete(StatusCodes.ServiceUnavailable)
               }
