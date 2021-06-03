@@ -13,4 +13,4 @@ Request server
 > GET /balance?throughput=<?>
 
 Release resources
-> GET /end
+> POST /end
